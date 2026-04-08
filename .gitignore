@@ -1,0 +1,8 @@
+.build/
+.vscode/
+
+# Runtime database — never commit student data
+db.sqlite3
+
+# macOS metadata
+.DS_Store

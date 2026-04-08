@@ -1,0 +1,29 @@
+{
+    "name": "Swift 6 Environment",
+    "image": "swift:6.2", 
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "swiftlang.swift-vscode",
+                "vadimcn.vscode-lldb"
+            ],
+            "settings": {
+                "editor.formatOnSave": true,
+                "swift.enableExperimentalTesting": true,
+                "files.watcherExclude": {
+                    "**/.build/**": true,
+                    "**/.git/**": true
+                }
+            }
+        }
+    },
+    "forwardPorts": [8080],
+    "postCreateCommand": "swift package resolve",
+    "remoteUser": "root",
+    "features": {
+        "ghcr.io/devcontainers/features/common-utils:2": {
+            "installZsh": "true",
+            "username": "vscode"
+        }
+    }
+}
