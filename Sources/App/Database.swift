@@ -206,6 +206,26 @@ struct Database {
         }
     }
 
+    // =========================================
+    // Mise à jour automatique du stockage utilisé
+    // =========================================
+
+    // Recalcule le stockage utilisé d'un entrepôt et met à jour la base de données.
+    // Cette fonction est appelée automatiquement après chaque ajout, modification ou suppression de produit.
+    // Elle est "private" car elle ne doit être utilisée qu'en interne par ce struct.
+    private static func refreshUsedStorage(db: Connection, warehouseId wid: Int64) throws {
+        // "productQuantity.sum" génère un SELECT SUM(quantity) FROM products WHERE warehouse_id = wid
+        // Le résultat est Int? (optionnel) car SUM retourne NULL si aucun produit n'existe.
+        // "?? 0" remplace NULL par 0 quand l'entrepôt est vide.
+        let total =
+            try db.scalar(products.filter(productWarehouseId == wid).select(productQuantity.sum))
+            ?? 0
+
+        // Met à jour la colonne "used_storage" de l'entrepôt avec la somme calculée
+        let target = warehouses.filter(warehouseId == wid)  // Sélectionne l'entrepôt ciblé
+        try db.run(target.update(warehouseUsed <- total))  // Exécute l'UPDATE SQL
+    }
+
     // Insère un nouveau produit dans la base de données.
     static func addProduct(
         db: Connection, title: String, description: String, quantity: Int, threshold: Int,
@@ -219,6 +239,8 @@ struct Database {
                 productThreshold <- threshold,
                 productWarehouseId <- wid  // Lie ce produit à un entrepôt existant
             ))
+        // Recalcule le stockage utilisé de l'entrepôt après l'ajout du produit
+        try refreshUsedStorage(db: db, warehouseId: wid)
     }
 
     // Met à jour un produit existant, identifié par son ID.
@@ -235,11 +257,20 @@ struct Database {
                 productThreshold <- threshold,
                 productWarehouseId <- wid
             ))
+        // Recalcule le stockage utilisé de l'entrepôt après la modification du produit
+        try refreshUsedStorage(db: db, warehouseId: wid)
     }
 
     // Supprime un produit par son ID.
     static func deleteProduct(db: Connection, id targetId: Int64) throws {
+        // Récupère la ligne du produit AVANT de la supprimer,
+        // car on a besoin de son warehouse_id pour recalculer le stockage ensuite.
+        // "db.pluck" retourne la première ligne correspondante, ou nil si le produit n'existe pas.
+        let row = try db.pluck(products.filter(productId == targetId))
         let target = products.filter(productId == targetId)  // Sélectionne le produit ciblé
         try db.run(target.delete())  // Exécute le DELETE SQL
+        // Recalcule le stockage utilisé de l'entrepôt après la suppression du produit.
+        // "if let row" vérifie que le produit existait bien avant la suppression.
+        if let row { try refreshUsedStorage(db: db, warehouseId: row[productWarehouseId]) }
     }
 }
