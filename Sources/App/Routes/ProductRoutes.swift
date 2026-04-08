@@ -34,6 +34,23 @@ func registerProductRoutes(on router: Router<BasicRequestContext>, db: Connectio
             return Response(status: .badRequest)
         }
 
+        // Vérifie que l'entrepôt existe et récupère sa capacité
+        guard let warehouse = try Database.fetchWarehouse(db: db, id: wid) else {
+            return Response(status: .badRequest)
+        }
+        // Calcule l'espace encore disponible dans l'entrepôt
+        // "totalStorage - usedStorage" = nombre d'unités libres
+        let available = warehouse.totalStorage - warehouse.usedStorage
+        guard quantity <= available else {
+            // Réaffiche le formulaire avec un message d'erreur explicite
+            let html = Views.renderAddProductForm(
+                warehouseId: wid,
+                error:
+                    "Capacité insuffisante : seulement \(available) unité(s) disponible(s) dans cet entrepôt."
+            )
+            return try html.response(from: request, context: context)
+        }
+
         // Insère le nouveau produit en base
         try Database.addProduct(
             db: db, title: title, description: description, quantity: quantity,
@@ -72,9 +89,26 @@ func registerProductRoutes(on router: Router<BasicRequestContext>, db: Connectio
             return Response(status: .badRequest)
         }
 
-        // Récupère le warehouseId actuel pour conserver le rattachement à l'entrepôt
+        // Récupère le produit actuel pour conserver le rattachement à l'entrepôt
         guard let existing = try Database.fetchProduct(db: db, id: pid) else {
             return Response(status: .notFound)
+        }
+
+        // Vérifie la capacité disponible en tenant compte de la quantité actuelle du produit.
+        // La quantité actuelle est déjà incluse dans "usedStorage", donc on la restitue
+        // avant de calculer l'espace libre : available = totalStorage - usedStorage + quantitéActuelle
+        guard let warehouse = try Database.fetchWarehouse(db: db, id: existing.warehouseId) else {
+            return Response(status: .badRequest)
+        }
+        let available = warehouse.totalStorage - warehouse.usedStorage + existing.quantity
+        guard quantity <= available else {
+            // Réaffiche le formulaire avec un message d'erreur explicite
+            let html = Views.renderEditProductForm(
+                product: existing,
+                error:
+                    "Capacité insuffisante : seulement \(available) unité(s) disponible(s) dans cet entrepôt."
+            )
+            return try html.response(from: request, context: context)
         }
 
         // Met à jour le produit en base de données (en conservant son entrepôt)
