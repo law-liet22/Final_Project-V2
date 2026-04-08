@@ -23,9 +23,12 @@ func parseFormBody(_ request: Request) async throws -> [String: String] {
     let buffer = try await request.body.collect(upTo: 1024 * 16)
     // Convertit le buffer binaire en texte (chaîne de caractères)
     let bodyString = String(buffer: buffer)
-    // Utilise URLComponents pour décoder les paires clé=valeur encodées en URL
+    // Utilise URLComponents pour décoder les paires clé=valeur encodées en URL.
+    // Dans le format application/x-www-form-urlencoded, les espaces sont envoyés comme "+".
+    // URLComponents ne les convertit pas automatiquement, donc on remplace d'abord "+" par "%20",
+    // qui est la notation percent-encodée standard pour un espace.
     var components = URLComponents()
-    components.percentEncodedQuery = bodyString
+    components.percentEncodedQuery = bodyString.replacingOccurrences(of: "+", with: "%20")
     // Transforme la liste de QueryItem en dictionnaire [String: String]
     // "?? [:]" retourne un dictionnaire vide si queryItems est nil
     return Dictionary(
