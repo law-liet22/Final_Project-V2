@@ -1,62 +1,245 @@
-import Hummingbird
+// \"import Foundation\" importe les outils de base de Swift
 import Foundation
+// \"import Hummingbird\" importe le framework web pour pouvoir retourner des réponses HTTP
+import Hummingbird
 
+// \"struct Views\" regroupe toutes les fonctions qui génèrent des pages HTML.
+// Chaque fonction retourne un objet HTML (défini en bas de ce fichier).
 struct Views {
-    static func renderIndex(items: [TaskItem]) -> HTML {
-        let rows = items.map { item in
-            """
-            <article style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <span style="text-decoration: \(item.isCompleted ? "line-through" : "none")">
-                    \(item.isCompleted ? "✅" : "⭕️") \(item.title)
-                </span>
-                <form action="/toggle/\(item.id ?? 0)" method="post" style="margin: 0;">
-                    <button type="submit" class="outline secondary" style="padding: 4px 8px; font-size: 0.8rem;">
-                        \(item.isCompleted ? "Undo" : "Complete")
-                    </button>
-                </form>
-            </article>
-            """
+
+    // =========================================
+    // Page d'accueil : liste de tous les entrepôts
+    // =========================================
+
+    // Génère la page principale affichant la liste de tous les entrepôts.
+    // \"warehouses\" est le tableau d'entrepôts à afficher.
+    static func renderIndex(warehouses: [Warehouse]) -> HTML {
+
+        // Pour chaque entrepôt, on génère un bloc HTML (article).
+        // ".map { ... }" transforme chaque entrepôt en une chaîne de texte HTML.
+        // ".joined()" colle tous ces blocs HTML en un seul texte.
+        let rows = warehouses.map { wh in
+            // On calcule un pourcentage d'utilisation pour la barre de progression
+            // Swift utilise "max(1, ...)" pour éviter une division par zéro
+            let usedPct =
+                wh.totalStorage > 0
+                ? Int((Double(wh.usedStorage) / Double(wh.totalStorage)) * 100)
+                : 0
+            // Retourne le bloc HTML pour cet entrepôt
+            return """
+                <article>
+                    <header>
+                        <strong><a href="/warehouses/\(wh.id ?? 0)">\(wh.name)</a></strong>
+                    </header>
+                    <p>\(wh.description)</p>
+                    <p>Stockage : \(wh.usedStorage) / \(wh.totalStorage) unités (\(usedPct)%)</p>
+                    <progress value="\(wh.usedStorage)" max="\(wh.totalStorage)"></progress>
+                    <footer style="display:flex; gap:8px;">
+                        <a href="/warehouses/\(wh.id ?? 0)" role="button" class="outline">Voir les produits</a>
+                        <form action="/warehouses/\(wh.id ?? 0)/delete" method="post" style="margin:0;">
+                            <button type="submit" class="outline contrast">Supprimer</button>
+                        </form>
+                    </footer>
+                </article>
+                """
         }.joined()
 
-        return HTML(content: """
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-            <title>Swift Task App</title>
-        </head>
-        <body class="container" style="padding-top: 2rem; max-width: 600px;">
-            <header>
-                <h1>Swift Task List</h1>
-                <p>A lightweight TO-DO List app built with Swift, Hummingbird, and SQLite.</p>
-            </header>
-            
-            <main>
-                <form action="/add" method="post" style="display: flex; gap: 10px;">
-                    <input type="text" name="title" placeholder="New task..." required style="flex-grow: 1;">
-                    <button type="submit">Add</button>
-                </form>
-                
-                <section>
-                    \(items.isEmpty ? "<p>No tasks yet! Add one above.</p>" : rows)
-                </section>
-            </main>
-        </body>
-        </html>
-        """)
+        // Retourne la page HTML complète avec la liste des entrepôts
+        return HTML(
+            content: """
+                <!DOCTYPE html>
+                <html lang="fr">
+                <head>
+                    <meta charset="utf-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1">
+                    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+                    <title>Gestion de Stock</title>
+                </head>
+                <body class="container" style="padding-top: 2rem; max-width: 800px;">
+                    <header>
+                        <h1>Gestion de Stock</h1>
+                        <p>Application de gestion des entrepôts et des produits.</p>
+                    </header>
+                    <main>
+                        <section>
+                            <h2>Entrepôts <a href="/warehouses/add" role="button" style="float:right; font-size:0.9rem;">+ Ajouter</a></h2>
+                            \(warehouses.isEmpty ? "<p>Aucun entrepôt pour l'instant. Commencez par en ajouter un !</p>" : rows)
+                        </section>
+                    </main>
+                </body>
+                </html>
+                """)
+    }
+
+    // =========================================
+    // Page de détail d'un entrepôt (avec ses produits)
+    // =========================================
+
+    // Génère la page de détail d'un entrepôt, avec la liste de ses produits.
+    // \"warehouse\" est l'entrepôt à afficher ; \"products\" est la liste de ses produits.
+    static func renderWarehouseDetail(warehouse: Warehouse, products: [Product]) -> HTML {
+
+        // Pour chaque produit, on génère un bloc HTML.
+        let rows = products.map { p in
+            // Si la quantité est sous le seuil, on affiche une alerte en rouge
+            let alert =
+                p.quantity < p.threshold
+                ? "<span style=\"color:red;\"> ⚠️ Stock bas !</span>"
+                : ""
+            return """
+                <article>
+                    <header>
+                        <strong>\(p.title)</strong>\(alert)
+                    </header>
+                    <p>\(p.description)</p>
+                    <p>Quantité : <strong>\(p.quantity)</strong> | Seuil : \(p.threshold)</p>
+                    <footer style="display:flex; gap:8px;">
+                        <form action="/products/\(p.id ?? 0)/delete" method="post" style="margin:0;">
+                            <button type="submit" class="outline contrast">Supprimer</button>
+                        </form>
+                    </footer>
+                </article>
+                """
+        }.joined()
+
+        return HTML(
+            content: """
+                <!DOCTYPE html>
+                <html lang="fr">
+                <head>
+                    <meta charset="utf-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1">
+                    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+                    <title>\(warehouse.name) – Gestion de Stock</title>
+                </head>
+                <body class="container" style="padding-top: 2rem; max-width: 800px;">
+                    <header>
+                        <a href="/">← Retour aux entrepôts</a>
+                        <h1>\(warehouse.name)</h1>
+                        <p>\(warehouse.description)</p>
+                        <p>Stockage : \(warehouse.usedStorage) / \(warehouse.totalStorage) unités</p>
+                    </header>
+                    <main>
+                        <section>
+                            <h2>Produits <a href="/warehouses/\(warehouse.id ?? 0)/products/add" role="button" style="float:right; font-size:0.9rem;">+ Ajouter un produit</a></h2>
+                            \(products.isEmpty ? "<p>Aucun produit dans cet entrepôt.</p>" : rows)
+                        </section>
+                    </main>
+                </body>
+                </html>
+                """)
+    }
+
+    // =========================================
+    // Formulaire d'ajout d'un entrepôt
+    // =========================================
+
+    // Génère le formulaire HTML pour créer un nouvel entrepôt.
+    // \"error\" est un message d'erreur optionnel à afficher (nil = pas d'erreur).
+    static func renderAddWarehouseForm(error: String? = nil) -> HTML {
+        // Si une erreur est présente, on génère un paragraphe rouge, sinon une chaîne vide
+        let errorHtml = error.map { "<p style=\"color:red;\">\($0)</p>" } ?? ""
+
+        return HTML(
+            content: """
+                <!DOCTYPE html>
+                <html lang="fr">
+                <head>
+                    <meta charset="utf-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1">
+                    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+                    <title>Ajouter un entrepôt – Gestion de Stock</title>
+                </head>
+                <body class="container" style="padding-top: 2rem; max-width: 600px;">
+                    <header>
+                        <a href="/">← Retour</a>
+                        <h1>Ajouter un entrepôt</h1>
+                    </header>
+                    <main>
+                        \(errorHtml)
+                        <form action="/warehouses/add" method="post">
+                            <label>Nom
+                                <input type="text" name="name" placeholder="Entrepôt Paris Nord" required>
+                            </label>
+                            <label>Description
+                                <textarea name="description" placeholder="Description de l'entrepôt..."></textarea>
+                            </label>
+                            <label>Capacité totale (unités)
+                                <input type="number" name="totalStorage" min="1" required>
+                            </label>
+                            <button type="submit">Créer l'entrepôt</button>
+                        </form>
+                    </main>
+                </body>
+                </html>
+                """)
+    }
+
+    // =========================================
+    // Formulaire d'ajout d'un produit dans un entrepôt
+    // =========================================
+
+    // Génère le formulaire HTML pour ajouter un produit dans un entrepôt spécifique.
+    // \"warehouseId\" est l'ID de l'entrepôt auquel le produit sera rattaché.
+    // \"error\" est un message d'erreur optionnel (nil = pas d'erreur).
+    static func renderAddProductForm(warehouseId: Int64, error: String? = nil) -> HTML {
+        let errorHtml = error.map { "<p style=\"color:red;\">\($0)</p>" } ?? ""
+
+        return HTML(
+            content: """
+                <!DOCTYPE html>
+                <html lang="fr">
+                <head>
+                    <meta charset="utf-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1">
+                    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+                    <title>Ajouter un produit – Gestion de Stock</title>
+                </head>
+                <body class="container" style="padding-top: 2rem; max-width: 600px;">
+                    <header>
+                        <a href="/warehouses/\(warehouseId)">← Retour à l'entrepôt</a>
+                        <h1>Ajouter un produit</h1>
+                    </header>
+                    <main>
+                        \(errorHtml)
+                        <form action="/warehouses/\(warehouseId)/products/add" method="post">
+                            <label>Nom du produit
+                                <input type="text" name="title" placeholder="Boîte de vis M6" required>
+                            </label>
+                            <label>Description
+                                <textarea name="description" placeholder="Description du produit..."></textarea>
+                            </label>
+                            <label>Quantité en stock
+                                <input type="number" name="quantity" value="0" min="0" required>
+                            </label>
+                            <label>Seuil de réapprovisionnement
+                                <input type="number" name="threshold" value="0" min="0" required>
+                            </label>
+                            <button type="submit">Ajouter le produit</button>
+                        </form>
+                    </main>
+                </body>
+                </html>
+                """)
     }
 }
 
-// Allows Hummingbird to return HTML strings
+// =========================================
+// Type HTML : permet à Hummingbird de retourner du HTML en réponse HTTP
+// =========================================
+
+// \"ResponseGenerator\" est un protocole de Hummingbird.
+// En le respectant, on peut retourner un objet HTML directement depuis une route.
 struct HTML: ResponseGenerator {
-    let content: String
+    let content: String  // Le contenu HTML de la page
+
+    // Cette fonction est appelée par Hummingbird pour construire la réponse HTTP.
+    // \"request\" représente la requête reçue ; \"context\" contient le contexte de la requête.
     func response(from request: Request, context: some RequestContext) throws -> Response {
         return Response(
-            status: .ok,
-            headers: [.contentType: "text/html"],
-            body: .init(byteBuffer: .init(string: content))
+            status: .ok,  // Code HTTP 200 OK
+            headers: [.contentType: "text/html; charset=utf-8"],  // Indique au navigateur le type de contenu
+            body: .init(byteBuffer: .init(string: content))  // Corps de la réponse = le HTML
         )
     }
 }
