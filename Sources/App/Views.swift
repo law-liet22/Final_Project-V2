@@ -36,6 +36,7 @@ struct Views {
                     <progress value="\(wh.usedStorage)" max="\(wh.totalStorage)"></progress>
                     <footer style="display:flex; gap:8px;">
                         <a href="/warehouses/\(wh.id ?? 0)" role="button" class="outline">Voir les produits</a>
+                        <a href="/warehouses/\(wh.id ?? 0)/edit" role="button" class="outline secondary">Modifier</a>
                         <form action="/warehouses/\(wh.id ?? 0)/delete" method="post" style="margin:0;">
                             <button type="submit" class="outline contrast">Supprimer</button>
                         </form>
@@ -94,6 +95,7 @@ struct Views {
                     <p>\(p.description)</p>
                     <p>Quantité : <strong>\(p.quantity)</strong> | Seuil : \(p.threshold)</p>
                     <footer style="display:flex; gap:8px;">
+                        <a href="/products/\(p.id ?? 0)/edit" role="button" class="outline secondary">Modifier</a>
                         <form action="/products/\(p.id ?? 0)/delete" method="post" style="margin:0;">
                             <button type="submit" class="outline contrast">Supprimer</button>
                         </form>
@@ -124,6 +126,104 @@ struct Views {
                             <h2>Produits <a href="/warehouses/\(warehouse.id ?? 0)/products/add" role="button" style="float:right; font-size:0.9rem;">+ Ajouter un produit</a></h2>
                             \(products.isEmpty ? "<p>Aucun produit dans cet entrepôt.</p>" : rows)
                         </section>
+                    </main>
+                </body>
+                </html>
+                """)
+    }
+
+    // =========================================
+    // Formulaire de modification d'un entrepôt
+    // =========================================
+
+    // Génère le formulaire HTML pré-rempli pour modifier un entrepôt existant.
+    // "warehouse" est l'entrepôt dont on veut modifier les informations.
+    // "error" est un message d'erreur optionnel à afficher (nil = pas d'erreur).
+    static func renderEditWarehouseForm(warehouse: Warehouse, error: String? = nil) -> HTML {
+        // Si une erreur est présente, on génère un paragraphe rouge, sinon une chaîne vide
+        let errorHtml = error.map { "<p style=\"color:red;\">\($0)</p>" } ?? ""
+        // "wid" est l'ID de l'entrepôt, utilisé dans l'URL du formulaire
+        let wid = warehouse.id ?? 0
+
+        return HTML(
+            content: """
+                <!DOCTYPE html>
+                <html lang="fr">
+                <head>
+                    <meta charset="utf-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1">
+                    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+                    <title>Modifier \(warehouse.name) – Gestion de Stock</title>
+                </head>
+                <body class="container" style="padding-top: 2rem; max-width: 600px;">
+                    <header>
+                        <a href="/">← Retour aux entrepôts</a>
+                        <h1>Modifier l'entrepôt</h1>
+                    </header>
+                    <main>
+                        \(errorHtml)
+                        <form action="/warehouses/\(wid)/edit" method="post">
+                            <label>Nom
+                                <input type="text" name="name" value="\(warehouse.name)" required>
+                            </label>
+                            <label>Description
+                                <textarea name="description">\(warehouse.description)</textarea>
+                            </label>
+                            <label>Capacité totale (unités)
+                                <input type="number" name="totalStorage" value="\(warehouse.totalStorage)" min="1" required>
+                            </label>
+                            <button type="submit">Enregistrer les modifications</button>
+                        </form>
+                    </main>
+                </body>
+                </html>
+                """)
+    }
+
+    // =========================================
+    // Formulaire de modification d'un produit
+    // =========================================
+
+    // Génère le formulaire HTML pré-rempli pour modifier un produit existant.
+    // "product" est le produit dont on veut modifier les informations.
+    // "error" est un message d'erreur optionnel (nil = pas d'erreur).
+    static func renderEditProductForm(product: Product, error: String? = nil) -> HTML {
+        let errorHtml = error.map { "<p style=\"color:red;\">\($0)</p>" } ?? ""
+        // "pid" est l'ID du produit, utilisé dans l'URL du formulaire
+        let pid = product.id ?? 0
+
+        return HTML(
+            content: """
+                <!DOCTYPE html>
+                <html lang="fr">
+                <head>
+                    <meta charset="utf-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1">
+                    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+                    <title>Modifier \(product.title) – Gestion de Stock</title>
+                </head>
+                <body class="container" style="padding-top: 2rem; max-width: 600px;">
+                    <header>
+                        <a href="/warehouses/\(product.warehouseId)">← Retour à l'entrepôt</a>
+                        <h1>Modifier le produit</h1>
+                    </header>
+                    <main>
+                        \(errorHtml)
+                        <form action="/products/\(pid)/edit" method="post">
+                            <label>Nom du produit
+                                <input type="text" name="title" value="\(product.title)" required>
+                            </label>
+                            <label>Description
+                                <textarea name="description">\(product.description)</textarea>
+                            </label>
+                            <label>Quantité en stock
+                                <input type="number" name="quantity" value="\(product.quantity)" min="0" required>
+                            </label>
+                            <label>Seuil de réapprovisionnement
+                                <input type="number" name="threshold" value="\(product.threshold)" min="0" required>
+                            </label>
+                            <button type="submit">Enregistrer les modifications</button>
+                        </form>
                     </main>
                 </body>
                 </html>
