@@ -66,12 +66,12 @@ struct Views {
                     <meta charset="utf-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1">
                     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-                    <title>Gestion de Stock</title>
+                    <title>WareStock</title>
                 </head>
                 <body class="container" style="padding-top: 2rem; max-width: 800px;">
                     <header>
                         <h1>Gestion de Stock</h1>
-                        <p>Application de gestion des entrepôts et des produits.</p>
+                        <p>Application de gestion des entrepôts et des produits. Projet final de fin de semestre à l'université Paris 8.</p>
                     </header>
                     <main>
                         <section>
@@ -124,7 +124,7 @@ struct Views {
                     <meta charset="utf-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1">
                     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-                    <title>\(warehouse.name) – Gestion de Stock</title>
+                    <title>\(warehouse.name) – WareStock </title>
                 </head>
                 <body class="container" style="padding-top: 2rem; max-width: 800px;">
                     <header>
@@ -165,7 +165,7 @@ struct Views {
                     <meta charset="utf-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1">
                     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-                    <title>Modifier \(warehouse.name) – Gestion de Stock</title>
+                    <title>Modifier \(warehouse.name) – WareStock</title>
                 </head>
                 <body class="container" style="padding-top: 2rem; max-width: 600px;">
                     <header>
@@ -212,7 +212,7 @@ struct Views {
                     <meta charset="utf-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1">
                     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-                    <title>Modifier \(product.title) – Gestion de Stock</title>
+                    <title>Modifier \(product.title) – WareStock</title>
                 </head>
                 <body class="container" style="padding-top: 2rem; max-width: 600px;">
                     <header>
@@ -260,7 +260,7 @@ struct Views {
                     <meta charset="utf-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1">
                     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-                    <title>Ajouter un entrepôt – Gestion de Stock</title>
+                    <title>Ajouter un entrepôt – WareStock</title>
                 </head>
                 <body class="container" style="padding-top: 2rem; max-width: 600px;">
                     <header>
@@ -305,7 +305,7 @@ struct Views {
                     <meta charset="utf-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1">
                     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-                    <title>Ajouter un produit – Gestion de Stock</title>
+                    <title>Ajouter un produit – WareStock</title>
                 </head>
                 <body class="container" style="padding-top: 2rem; max-width: 600px;">
                     <header>
