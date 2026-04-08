@@ -20,11 +20,14 @@ struct Views {
         // ".joined()" colle tous ces blocs HTML en un seul texte.
         let rows = warehouses.map { wh in
             // On calcule un pourcentage d'utilisation pour la barre de progression
-            // Swift utilise "max(1, ...)" pour éviter une division par zéro
+            // Swift utilise la valeur 0 si le stockage total vaut 0 (évite la division par zéro)
             let usedPct =
                 wh.totalStorage > 0
                 ? Int((Double(wh.usedStorage) / Double(wh.totalStorage)) * 100)
                 : 0
+            // On clamp le pourcentage entre 0 et 100 pour ne jamais dépasser les bornes
+            // "min(100, max(0, ...))" garantit que la valeur reste dans l'intervalle [0, 100]
+            let clampedPct = min(100, max(0, usedPct))
             // Retourne le bloc HTML pour cet entrepôt
             return """
                 <article>
@@ -32,9 +35,18 @@ struct Views {
                         <strong><a href="/warehouses/\(wh.id ?? 0)">\(wh.name)</a></strong>
                     </header>
                     <p>\(wh.description)</p>
-                    <p>Stockage : \(wh.usedStorage) / \(wh.totalStorage) unités (\(usedPct)%)</p>
-                    <progress value="\(wh.usedStorage)" max="\(wh.totalStorage)"></progress>
-                    <footer style="display:flex; gap:8px;">
+                    <p>Stockage : \(wh.usedStorage) / \(wh.totalStorage) unités (\(clampedPct)%)</p>
+                    <div style="background:#e5e7eb; border-radius:6px; height:12px; overflow:hidden;">
+                        <div style="
+                            width:\(clampedPct)%;
+                            height:100%;
+                            background: linear-gradient(to right, #3b82f6, #a855f7, #ef4444);
+                            background-size: \(clampedPct > 0 ? Int(10000 / clampedPct) : 100)% 100%;
+                            border-radius:6px;
+                            transition: width 0.4s ease;
+                        "></div>
+                    </div>
+                    <footer style="display:flex; gap:8px; margin-top:0.75rem;">
                         <a href="/warehouses/\(wh.id ?? 0)" role="button" class="outline">Voir les produits</a>
                         <a href="/warehouses/\(wh.id ?? 0)/edit" role="button" class="outline secondary">Modifier</a>
                         <form action="/warehouses/\(wh.id ?? 0)/delete" method="post" style="margin:0;">
