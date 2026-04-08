@@ -1,24 +1,24 @@
-// \"import Foundation\" importe les outils de base de Swift
+// "import Foundation" importe les outils de base de Swift
 import Foundation
-// \"import SQLite\" importe la bibliothèque SQLite.swift pour travailler avec la base de données
+// "import SQLite" importe la bibliothèque SQLite.swift pour travailler avec la base de données
 import SQLite
 
 // SQLite.swift utilise une file d'attente interne, donc on peut l'utiliser en concurrence sans risque.
-// \"@unchecked Sendable\" indique qu'on prend nous-mêmes la responsabilité de cette garantie.
-// \"@retroactive\" permet d'étendre un type extérieur (Connection) avec un protocole (Sendable).
+// "@unchecked Sendable" indique qu'on prend nous-mêmes la responsabilité de cette garantie.
+// "@retroactive" permet d'étendre un type extérieur (Connection) avec un protocole (Sendable).
 extension Connection: @unchecked @retroactive Sendable {}
 
-// \"struct Database\" regroupe toutes les définitions de tables et les fonctions d'accès aux données.
+// "struct Database" regroupe toutes les définitions de tables et les fonctions d'accès aux données.
 struct Database {
 
     // =========================================
     // Définition de la table "warehouses" (entrepôts)
     // =========================================
 
-    // \"Table(\"warehouses\")\" représente la table SQL nommée "warehouses"
+    // "Table("warehouses")" représente la table SQL nommée "warehouses"
     static let warehouses = Table("warehouses")
 
-    // \"Expression<T>\" décrit une colonne de la table ; T est le type Swift de la donnée.
+    // "Expression<T>" décrit une colonne de la table ; T est le type Swift de la donnée.
     static let warehouseId = Expression<Int64>("id")  // Colonne "id" : entier 64 bits
     static let warehouseName = Expression<String>("name")  // Colonne "name" : texte
     static let warehouseDesc = Expression<String>("description")  // Colonne "description" : texte
@@ -44,7 +44,7 @@ struct Database {
 
     // Cette fonction est appelée au démarrage de l'application.
     // Elle ouvre (ou crée) le fichier .sqlite3 et crée les tables si elles n'existent pas encore.
-    // \"throws\" signifie qu'elle peut lancer une erreur (ex : problème d'écriture sur le disque).
+    // "throws" signifie qu'elle peut lancer une erreur (ex : problème d'écriture sur le disque).
     static func setup() throws -> Connection {
         // Ouvre ou crée le fichier "db.sqlite3" dans le répertoire courant
         let db = try Connection("db.sqlite3")
@@ -89,7 +89,7 @@ struct Database {
     // =========================================
 
     // Retourne la liste de tous les entrepôts présents dans la base de données.
-    // \"throws\" signifie que la fonction peut échouer (connexion perdue, etc.).
+    // "throws" signifie que la fonction peut échouer (connexion perdue, etc.).
     static func fetchAllWarehouses(db: Connection) throws -> [Warehouse] {
         // "db.prepare(warehouses)" prépare un SELECT * FROM warehouses
         // ".map { row in ... }" transforme chaque ligne SQL en objet Swift Warehouse

@@ -1,10 +1,10 @@
-// \"import Foundation\" importe les outils de base de Swift
+// "import Foundation" importe les outils de base de Swift
 import Foundation
-// \"import Hummingbird\" importe le framework web pour pouvoir retourner des réponses HTTP
+// "import Hummingbird" importe le framework web pour pouvoir retourner des réponses HTTP
 import Hummingbird
 
-// \"struct Views\" regroupe toutes les fonctions qui génèrent des pages HTML.
-// Chaque fonction retourne un objet HTML (défini en bas de ce fichier).
+// "struct Views" regroupe toutes les fonctions qui génèrent des pages HTML.
+// Chaque fonction retourne un objet HTML (défini dans HTML.swift).
 struct Views {
 
     // =========================================
@@ -12,7 +12,7 @@ struct Views {
     // =========================================
 
     // Génère la page principale affichant la liste de tous les entrepôts.
-    // \"warehouses\" est le tableau d'entrepôts à afficher.
+    // "warehouses" est le tableau d'entrepôts à afficher.
     static func renderIndex(warehouses: [Warehouse]) -> HTML {
 
         // Pour chaque entrepôt, on génère un bloc HTML (article).
@@ -89,7 +89,7 @@ struct Views {
     // =========================================
 
     // Génère la page de détail d'un entrepôt, avec la liste de ses produits.
-    // \"warehouse\" est l'entrepôt à afficher ; \"products\" est la liste de ses produits.
+    // "warehouse" est l'entrepôt à afficher ; "products" est la liste de ses produits.
     static func renderWarehouseDetail(warehouse: Warehouse, products: [Product]) -> HTML {
 
         // Pour chaque produit, on génère un bloc HTML.
@@ -124,7 +124,7 @@ struct Views {
                     <meta charset="utf-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1">
                     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-                    <title>\(warehouse.name) – WareStock </title>
+                    <title>\(warehouse.name) – WareStock</title>
                 </head>
                 <body class="container" style="padding-top: 2rem; max-width: 800px;">
                     <header>
@@ -145,6 +145,51 @@ struct Views {
     }
 
     // =========================================
+    // Formulaire d'ajout d'un entrepôt
+    // =========================================
+
+    // Génère le formulaire HTML pour créer un nouvel entrepôt.
+    // "error" est un message d'erreur optionnel à afficher (nil = pas d'erreur).
+    static func renderAddWarehouseForm(error: String? = nil) -> HTML {
+        // Si une erreur est présente, on génère un paragraphe rouge, sinon une chaîne vide
+        let errorHtml = error.map { "<p style=\"color:red;\">\($0)</p>" } ?? ""
+
+        return HTML(
+            content: """
+                <!DOCTYPE html>
+                <html lang="fr">
+                <head>
+                    <meta charset="utf-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1">
+                    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+                    <title>Ajouter un entrepôt – WareStock</title>
+                </head>
+                <body class="container" style="padding-top: 2rem; max-width: 600px;">
+                    <header>
+                        <a href="/">← Retour</a>
+                        <h1>Ajouter un entrepôt</h1>
+                    </header>
+                    <main>
+                        \(errorHtml)
+                        <form action="/warehouses/add" method="post">
+                            <label>Nom
+                                <input type="text" name="name" placeholder="Entrepôt Paris Nord" required>
+                            </label>
+                            <label>Description
+                                <textarea name="description" placeholder="Description de l'entrepôt..."></textarea>
+                            </label>
+                            <label>Capacité totale (unités)
+                                <input type="number" name="totalStorage" min="1" required>
+                            </label>
+                            <button type="submit">Créer l'entrepôt</button>
+                        </form>
+                    </main>
+                </body>
+                </html>
+                """)
+    }
+
+    // =========================================
     // Formulaire de modification d'un entrepôt
     // =========================================
 
@@ -152,7 +197,6 @@ struct Views {
     // "warehouse" est l'entrepôt dont on veut modifier les informations.
     // "error" est un message d'erreur optionnel à afficher (nil = pas d'erreur).
     static func renderEditWarehouseForm(warehouse: Warehouse, error: String? = nil) -> HTML {
-        // Si une erreur est présente, on génère un paragraphe rouge, sinon une chaîne vide
         let errorHtml = error.map { "<p style=\"color:red;\">\($0)</p>" } ?? ""
         // "wid" est l'ID de l'entrepôt, utilisé dans l'URL du formulaire
         let wid = warehouse.id ?? 0
@@ -185,6 +229,54 @@ struct Views {
                                 <input type="number" name="totalStorage" value="\(warehouse.totalStorage)" min="1" required>
                             </label>
                             <button type="submit">Enregistrer les modifications</button>
+                        </form>
+                    </main>
+                </body>
+                </html>
+                """)
+    }
+
+    // =========================================
+    // Formulaire d'ajout d'un produit dans un entrepôt
+    // =========================================
+
+    // Génère le formulaire HTML pour ajouter un produit dans un entrepôt spécifique.
+    // "warehouseId" est l'ID de l'entrepôt auquel le produit sera rattaché.
+    // "error" est un message d'erreur optionnel (nil = pas d'erreur).
+    static func renderAddProductForm(warehouseId: Int64, error: String? = nil) -> HTML {
+        let errorHtml = error.map { "<p style=\"color:red;\">\($0)</p>" } ?? ""
+
+        return HTML(
+            content: """
+                <!DOCTYPE html>
+                <html lang="fr">
+                <head>
+                    <meta charset="utf-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1">
+                    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+                    <title>Ajouter un produit – WareStock</title>
+                </head>
+                <body class="container" style="padding-top: 2rem; max-width: 600px;">
+                    <header>
+                        <a href="/warehouses/\(warehouseId)">← Retour à l'entrepôt</a>
+                        <h1>Ajouter un produit</h1>
+                    </header>
+                    <main>
+                        \(errorHtml)
+                        <form action="/warehouses/\(warehouseId)/products/add" method="post">
+                            <label>Nom du produit
+                                <input type="text" name="title" placeholder="Boîte de vis M6" required>
+                            </label>
+                            <label>Description
+                                <textarea name="description" placeholder="Description du produit..."></textarea>
+                            </label>
+                            <label>Quantité en stock
+                                <input type="number" name="quantity" value="0" min="0" required>
+                            </label>
+                            <label>Seuil de réapprovisionnement
+                                <input type="number" name="threshold" value="0" min="0" required>
+                            </label>
+                            <button type="submit">Ajouter le produit</button>
                         </form>
                     </main>
                 </body>
@@ -240,118 +332,5 @@ struct Views {
                 </body>
                 </html>
                 """)
-    }
-
-    // =========================================
-    // Formulaire d'ajout d'un entrepôt
-    // =========================================
-
-    // Génère le formulaire HTML pour créer un nouvel entrepôt.
-    // \"error\" est un message d'erreur optionnel à afficher (nil = pas d'erreur).
-    static func renderAddWarehouseForm(error: String? = nil) -> HTML {
-        // Si une erreur est présente, on génère un paragraphe rouge, sinon une chaîne vide
-        let errorHtml = error.map { "<p style=\"color:red;\">\($0)</p>" } ?? ""
-
-        return HTML(
-            content: """
-                <!DOCTYPE html>
-                <html lang="fr">
-                <head>
-                    <meta charset="utf-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1">
-                    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-                    <title>Ajouter un entrepôt – WareStock</title>
-                </head>
-                <body class="container" style="padding-top: 2rem; max-width: 600px;">
-                    <header>
-                        <a href="/">← Retour</a>
-                        <h1>Ajouter un entrepôt</h1>
-                    </header>
-                    <main>
-                        \(errorHtml)
-                        <form action="/warehouses/add" method="post">
-                            <label>Nom
-                                <input type="text" name="name" placeholder="Entrepôt Paris Nord" required>
-                            </label>
-                            <label>Description
-                                <textarea name="description" placeholder="Description de l'entrepôt..."></textarea>
-                            </label>
-                            <label>Capacité totale (unités)
-                                <input type="number" name="totalStorage" min="1" required>
-                            </label>
-                            <button type="submit">Créer l'entrepôt</button>
-                        </form>
-                    </main>
-                </body>
-                </html>
-                """)
-    }
-
-    // =========================================
-    // Formulaire d'ajout d'un produit dans un entrepôt
-    // =========================================
-
-    // Génère le formulaire HTML pour ajouter un produit dans un entrepôt spécifique.
-    // \"warehouseId\" est l'ID de l'entrepôt auquel le produit sera rattaché.
-    // \"error\" est un message d'erreur optionnel (nil = pas d'erreur).
-    static func renderAddProductForm(warehouseId: Int64, error: String? = nil) -> HTML {
-        let errorHtml = error.map { "<p style=\"color:red;\">\($0)</p>" } ?? ""
-
-        return HTML(
-            content: """
-                <!DOCTYPE html>
-                <html lang="fr">
-                <head>
-                    <meta charset="utf-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1">
-                    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-                    <title>Ajouter un produit – WareStock</title>
-                </head>
-                <body class="container" style="padding-top: 2rem; max-width: 600px;">
-                    <header>
-                        <a href="/warehouses/\(warehouseId)">← Retour à l'entrepôt</a>
-                        <h1>Ajouter un produit</h1>
-                    </header>
-                    <main>
-                        \(errorHtml)
-                        <form action="/warehouses/\(warehouseId)/products/add" method="post">
-                            <label>Nom du produit
-                                <input type="text" name="title" placeholder="Boîte de vis M6" required>
-                            </label>
-                            <label>Description
-                                <textarea name="description" placeholder="Description du produit..."></textarea>
-                            </label>
-                            <label>Quantité en stock
-                                <input type="number" name="quantity" value="0" min="0" required>
-                            </label>
-                            <label>Seuil de réapprovisionnement
-                                <input type="number" name="threshold" value="0" min="0" required>
-                            </label>
-                            <button type="submit">Ajouter le produit</button>
-                        </form>
-                    </main>
-                </body>
-                </html>
-                """)
-    }
-}
-
-// =========================================
-// Type HTML : permet à Hummingbird de retourner du HTML en réponse HTTP
-// =========================================
-
-// \"ResponseGenerator\" est un protocole de Hummingbird.
-// En le respectant, on peut retourner un objet HTML directement depuis une route.
-struct HTML: ResponseGenerator {
-    let content: String  // Le contenu HTML de la page
-
-    // Cette fonction est appelée par Hummingbird pour construire la réponse HTTP.
-    // \"request\" représente la requête reçue ; \"context\" contient le contexte de la requête.
-    func response(from request: Request, context: some RequestContext) throws -> Response {
-        return Response(
-            status: .ok,  // Code HTTP 200 OK
-            headers: [.contentType: "text/html; charset=utf-8"],  // Indique au navigateur le type de contenu
-            body: .init(byteBuffer: .init(string: content))  // Corps de la réponse = le HTML
-        )
     }
 }
